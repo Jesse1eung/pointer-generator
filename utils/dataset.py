@@ -274,6 +274,7 @@ class Batcher(object):
         self.batch_size = batch_size
         self.single_pass = single_pass
         self.mode = mode
+        # self.num = 0
 
         # Initialize a queue of Batches waiting to be used, and a queue of Examples waiting to be batched
         self._batch_queue = queue.Queue(self.BATCH_QUEUE_MAX)
@@ -330,6 +331,8 @@ class Batcher(object):
             try:
                 (article,
                  abstract) = input_gen.__next__()  # read the next example from file. article and abstract are both strings.
+
+                # print("canot enter stop")
             except StopIteration:  # if there are no more examples:
                 tf.logging.info("The example generator for this example queue filling thread has exhausted data.")
                 if self.single_pass:

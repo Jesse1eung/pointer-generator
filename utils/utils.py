@@ -36,7 +36,7 @@ def article2ids(article_words, vocab):
     unk_id = vocab.word2id(config.UNK_TOKEN)
     for article in article_words:
         id = []
-        for w in article_words:
+        for w in article:
             i = vocab.word2id(w)
             if i == unk_id:  # If w is OOV
                 if w not in oov:  # Add to list of OOVs

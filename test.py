@@ -174,7 +174,7 @@ class BeamSearch(object):
                 decoded_words = decoded_words[:fst_stop_idx]
             except ValueError:
                 decoded_words = decoded_words
-            # notice: "original_abstract_sents" means its datetype is bytes-like.
+            # notice: "original_abstract_sents": 'original' means its datetype is bytes-like.
             original_abstract_sents = batch.original_abstracts_sents[0]
 
             write_for_rouge(original_abstract_sents, decoded_words, counter,

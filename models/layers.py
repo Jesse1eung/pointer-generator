@@ -66,23 +66,23 @@ class Encoders_Attention(BasicModule):
 
         return att_dist
 
-class Encoders(BasicModule):
-    def __init__(self):
-        super(Encoders, self).__init__()
-
-        self.encoders = nn.ModuleList([Encoder() for _ in range(config.num_encoders)])
-
-        self.init_params()
-
-    def forward(self, input, seq_lens):
-        enc_outs = []
-        enc_feas = []
-        enc_hs = []
-        for i, encoder in enumerate(self.encoders):
-            enc_out, enc_fea, enc_h = encoder(input[i], seq_lens[i])
-            enc_outs.append(enc_out)
-            enc_feas.append(enc_fea)
-            enc_hs.append(enc_h)
+# class Encoders(BasicModule):
+#     def __init__(self):
+#         super(Encoders, self).__init__()
+#
+#         self.encoders = nn.ModuleList([Encoder() for _ in range(config.num_encoders)])
+#
+#         self.init_params()
+#
+#     def forward(self, input, seq_lens):
+#         enc_outs = []
+#         enc_feas = []
+#         enc_hs = []
+#         for i, encoder in enumerate(self.encoders):
+#             enc_out, enc_fea, enc_h = encoder(input[i], seq_lens[i])
+#             enc_outs.append(enc_out)
+#             enc_feas.append(enc_fea)
+#             enc_hs.append(enc_h)
 
 
 class ReduceState(BasicModule):
