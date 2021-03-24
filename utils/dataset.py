@@ -112,13 +112,13 @@ class Example(object):
             self.enc_len.append(len(article_words))  # store the length after truncation but before padding
             self.enc_inp.append([vocab.word2id(w) for w in
                               article_words])   # list of word ids; OOVs are represented by the id for UNK token
-
+            articles_words.append(article_words)
         # If using pointer-generator mode, we need to store some extra info
 
         if config.pointer_gen:
             # Store a version of the enc_input where in-article OOVs are represented by their temporary OOV id;
             # also store the in-article OOVs words themselves
-            self.enc_inp_extend_vocab, self.article_oovs = utils.article2ids(article_words, vocab)
+            self.enc_inp_extend_vocab, self.article_oovs = utils.article2ids(articles_words, vocab)
 
             # Get a verison of the reference summary where in-article OOVs are represented by their temporary article OOV id
             abs_ids_extend_vocab = utils.abstract2ids(abstract_words, vocab, self.article_oovs)

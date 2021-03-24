@@ -46,6 +46,7 @@ def article2ids(article_words, vocab):
             else:
                 id.append(i)
         ids.append(id)
+    print(len(ids))
     return ids, oov
 
 
