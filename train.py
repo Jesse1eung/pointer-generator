@@ -20,7 +20,8 @@ from utils.utils import get_output_from_batch
 from utils.utils import calc_running_avg_loss
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
-
+gpus = [ 1, 2, 3]
+torch.cuda.set_device('cuda:{}'.format(gpus[1]))
 
 class Train(object):
     def __init__(self):
@@ -162,7 +163,7 @@ class Train(object):
     def run(self, n_iters, model_path=None):
         iter, running_avg_loss = self.setup_train(model_path)
         start = time.time()
-        interval = 100
+        interval = 1000
 
         while iter < n_iters:
             batch = self.batcher.next_batch()
