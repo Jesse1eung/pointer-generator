@@ -36,6 +36,7 @@ class Attention(BasicModule):
         scores = self.fc(e)                                 # B*l x 1
         scores = scores.view(-1, l)                         # B x l
 
+        enc_padding_mask = enc_padding_mask[:,:l]
         attn_dist_ = F.softmax(scores, dim=1) * enc_padding_mask  # B x l
         normalization_factor = attn_dist_.sum(1, keepdim=True)
         attn_dist = attn_dist_ / normalization_factor
