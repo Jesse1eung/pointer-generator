@@ -147,25 +147,26 @@ class Decoder(BasicModule):
         s_t_hat = torch.cat((dec_h.view(-1, config.hidden_dim),
                              dec_c.view(-1, config.hidden_dim)), 1)  # B x 2*hidden_dim
         encs_att = self.encoders_att(enc_h, y_t_embd)
-        c_t, attn_dist, coverage_next = self.multiattention(s_t_hat, enc_out, enc_fea, encs_att,
+        c_t, c_t_list, attn_dist, coverage_next = self.multiattention(s_t_hat, enc_out, enc_fea, encs_att,
                                                             enc_padding_mask, coverage)
 
         if self.training or step > 0:
             coverage = coverage_next
 
         p_gen = None
-        if config.pointer_gen:
-            p_gen_inp = torch.cat((c_t, s_t_hat, x), 1)  # B x (2*2*hidden_dim + emb_dim)
-            p_gen = self.p_gen_fc(p_gen_inp)
-            p_gen = torch.sigmoid(p_gen)
-        final_dist = self.merge_final_dist(c_t, attn_dist, encs_att, extra_zeros,
+
+        final_dist = self.merge_final_dist(c_t_list, s_t_hat, x, attn_dist, encs_att, extra_zeros,
                                            enc_batch_extend_vocab, lstm_out, p_gen)
 
         return final_dist, s_t, c_t, attn_dist, p_gen, coverage
 
-    def merge_final_dist(self, c_t, attn_dist, encs_att, extra_zeros, enc_batch_extend_vocab,
-                         lstm_out, p_gen):
+    def merge_final_dist(self, c_t, s_t_hat, x, attn_dist, encs_att, extra_zeros, enc_batch_extend_vocab,
+                         lstm_out, p_gen=None):
         final_dists = []
+        if config.pointer_gen:
+            p_gen_inp = torch.cat((c_t, s_t_hat, x), 1)  # B x (2*2*hidden_dim + emb_dim)
+            p_gen = self.p_gen_fc(p_gen_inp)
+            p_gen = torch.sigmoid(p_gen)
         for i in range(config.num_encoders):
 
             output = torch.cat((lstm_out.view(-1, config.hidden_dim), c_t[i]), 1)  # B x hidden_dim * 3

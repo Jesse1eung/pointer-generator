@@ -68,4 +68,4 @@ class MultiAttention(BasicModule):
             attn_dists.append(attn_dist)
         c_t = torch.stack(c_ts, 1)
         c_t = torch.bmm(encs_att,c_t).squeeze()
-        return c_t, attn_dists, coverage
+        return c_t, c_ts, attn_dists, coverage
