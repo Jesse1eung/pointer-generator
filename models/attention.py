@@ -21,7 +21,8 @@ class Attention(BasicModule):
 
     def forward(self, s_t, enc_out, enc_fea, enc_padding_mask, coverage):
         b, l, n = list(enc_out.size())
-
+#        if l != 400:
+#            print("b ", l, enc_padding_mask.shape)
         dec_fea = self.dec_fc(s_t)  # B x 2*hidden_dim
         dec_fea_expanded = dec_fea.unsqueeze(1).expand(b, l, n).contiguous()  # B x l x 2*hidden_dim
         dec_fea_expanded = dec_fea_expanded.view(-1, n)     # B*l x 2*hidden_dim
@@ -36,6 +37,7 @@ class Attention(BasicModule):
         scores = self.fc(e)                                 # B*l x 1
         scores = scores.view(-1, l)                         # B x l
 
+        enc_padding_mask = enc_padding_mask[:, :l]
         attn_dist_ = F.softmax(scores, dim=1) * enc_padding_mask  # B x l
         normalization_factor = attn_dist_.sum(1, keepdim=True)
         attn_dist = attn_dist_ / normalization_factor

@@ -38,11 +38,13 @@ class Model(object):
         if is_eval:
             encoders = encoders.eval()
             decoder = decoder.eval()
+            encoders_att = encoders_att.eval()
             reduce_state = reduce_state.eval()
 
         if use_cuda:
             encoders = encoders.cuda()
             decoder = decoder.cuda()
+            encoders_att = encoders_att.cuda()
             reduce_state = reduce_state.cuda()
 
         self.encoders = encoders

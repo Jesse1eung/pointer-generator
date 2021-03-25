@@ -123,14 +123,14 @@ class Decoder(BasicModule):
 
     def forward(self, y_t, s_t, enc_out, enc_fea, enc_padding_mask,
                 c_t, extra_zeros, enc_batch_extend_vocab, coverage, step):
-
+        b, l, n = list(enc_out.size())
+        enc_batch_extend_vocab = enc_batch_extend_vocab[:, :l]
         if not self.training and step == 0:
             dec_h, dec_c = s_t
             s_t_hat = torch.cat((dec_h.view(-1, config.hidden_dim),
                                  dec_c.view(-1, config.hidden_dim)), 1)  # B x 2*hidden_dim
             c_t, _, coverage_next = self.attention_network(s_t_hat, enc_out, enc_fea,
                                                            enc_padding_mask, coverage)
-            print("step 0")
             coverage = coverage_next
 
         y_t_embd = self.tgt_word_emb(y_t)
@@ -166,7 +166,6 @@ class Decoder(BasicModule):
 
             if extra_zeros is not None:
                 vocab_dist_ = torch.cat([vocab_dist_, extra_zeros], 1)
-
             final_dist = vocab_dist_.scatter_add(1, enc_batch_extend_vocab, attn_dist_)
         else:
             final_dist = vocab_dist

@@ -17,7 +17,7 @@ from utils.utils import get_input_from_batch
 from utils.utils import write_for_rouge, rouge_eval, rouge_log
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
-
+torch.cuda.set_device('cuda:{}'.format(2))
 
 class Beam(object):
     def __init__(self, tokens, log_probs, state, context, coverage):
@@ -70,7 +70,16 @@ class BeamSearch(object):
         enc_batch, enc_lens, enc_pos, enc_padding_mask, enc_batch_extend_vocab, extra_zeros, c_t, coverage = \
             get_input_from_batch(batch, use_cuda)
 
-        enc_out, enc_fea, enc_h = self.model.encoder(enc_batch, enc_lens)
+        enc_outs = []
+        enc_feas = []
+        enc_hs = []
+        if not config.tran:
+            for i, encoder in enumerate(self.model.encoders):
+                enc_out, enc_fea, enc_h = encoder(enc_batch[i], enc_lens[i])
+                enc_outs.append(enc_out)
+                enc_feas.append(enc_fea)
+                enc_hs.append(enc_h)
+        # enc_out, enc_fea, enc_h = self.model.encoder(enc_batch, enc_lens)
         s_t = self.model.reduce_state(enc_h)
 
         dec_h, dec_c = s_t     # b x hidden_dim
@@ -106,11 +115,34 @@ class BeamSearch(object):
                 all_coverage = [h.coverage for h in beams]
                 coverage_t = torch.stack(all_coverage, 0)
 
-            final_dist, s_t, c_t, attn_dist, p_gen, coverage_t = self.model.decoder(y_t, s_t,
-                                                                                    enc_out, enc_fea,
-                                                                                    enc_padding_mask, c_t,
-                                                                                    extra_zeros, enc_batch_extend_vocab,
-                                                                                    coverage_t, steps)
+            # final_dist, s_t, c_t, attn_dist, p_gen, coverage_t = self.model.decoder(y_t, s_t,
+            #                                                                         enc_out, enc_fea,
+            #                                                                         enc_padding_mask, c_t,
+            #                                                                         extra_zeros, enc_batch_extend_vocab,
+            #                                                                         coverage_t, steps)
+            final_dist_0, s_t_0, c_t_0, attn_dist_0, p_gen, next_coverage = \
+                self.model.decoder(y_t, s_t, enc_outs[0], enc_feas[0], enc_padding_mask[0], c_t,
+                                   extra_zeros, enc_batch_extend_vocab[0], coverage, steps)
+            final_dist_1, s_t_1, c_t_1, attn_dist, p_gen, next_coverage = \
+                self.model.decoder(y_t, s_t, enc_outs[1], enc_feas[1], enc_padding_mask[1], c_t,
+                                   extra_zeros, enc_batch_extend_vocab[1], coverage, steps)
+            y_t_emb = self.model.decoder.tgt_word_emb(y_t)
+            encoders_att = self.model.encoders_att(enc_hs, y_t_emb)
+
+            # 更新final_dist
+            final_dist = torch.stack((final_dist_0, final_dist_1), dim=1)
+            final_dist = torch.bmm(encoders_att, final_dist).squeeze()
+
+            # 更新c_t
+            c_t = torch.stack((c_t_0, c_t_1), dim=1)
+            c_t = torch.bmm(encoders_att, c_t).squeeze()
+
+            # 更新s_t
+            encoders_att_ = encoders_att.transpose(0, 1).contiguous() # 1 x b x 2
+            h = s_t_0[0] * encoders_att_[:, :, :1] + s_t_1[0] * encoders_att_[:, :, 1:]
+            c = s_t_0[1] * encoders_att_[:, :, :1] + s_t_1[1] * encoders_att_[:, :, 1:]
+            s_t = (h, c)
+
             log_probs = torch.log(final_dist)
             topk_log_probs, topk_ids = torch.topk(log_probs, config.beam_size * 2)
 

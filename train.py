@@ -20,8 +20,9 @@ from utils.utils import get_output_from_batch
 from utils.utils import calc_running_avg_loss
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
-gpus = [ 1, 2, 3]
-torch.cuda.set_device('cuda:{}'.format(gpus[1]))
+gpus = [0, 1, 2, 3]
+
+torch.cuda.set_device('cuda:{}'.format(gpus[0]))
 
 class Train(object):
     def __init__(self):
@@ -122,6 +123,8 @@ class Train(object):
             final_dist = torch.stack((final_dist_0, final_dist_1), dim=1)
             final_dist = torch.bmm(encoders_att, final_dist).squeeze()
 
+            c_t = torch.stack((c_t_0, c_t_1), 1)
+            c_t = torch.bmm(encoders_att, c_t).squeeze()
             encoders_att_ = encoders_att.transpose(0, 1).contiguous() # 1 x b x 2
             h = s_t_0[0] * encoders_att_[:, :, :1] + s_t_1[0] * encoders_att_[:, :, 1:]
             c = s_t_0[1] * encoders_att_[:, :, :1] + s_t_1[1] * encoders_att_[:, :, 1:]
@@ -163,7 +166,7 @@ class Train(object):
     def run(self, n_iters, model_path=None):
         iter, running_avg_loss = self.setup_train(model_path)
         start = time.time()
-        interval = 1000
+        interval = 500
 
         while iter < n_iters:
             batch = self.batcher.next_batch()
@@ -177,7 +180,7 @@ class Train(object):
                 print(
                     'step: %d, second: %.2f , loss: %f, cover_loss: %f' % (iter, time.time() - start, loss, cove_loss))
                 start = time.time()
-            if iter % 5000 == 0:
+            if iter % 500 == 0:
                 self.save_model(running_avg_loss, iter)
 
 

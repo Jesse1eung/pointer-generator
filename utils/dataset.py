@@ -112,13 +112,14 @@ class Example(object):
             self.enc_len.append(len(article_words))  # store the length after truncation but before padding
             self.enc_inp.append([vocab.word2id(w) for w in
                               article_words])   # list of word ids; OOVs are represented by the id for UNK token
+            articles_words.append(article_words)
 
         # If using pointer-generator mode, we need to store some extra info
 
         if config.pointer_gen:
             # Store a version of the enc_input where in-article OOVs are represented by their temporary OOV id;
             # also store the in-article OOVs words themselves
-            self.enc_inp_extend_vocab, self.article_oovs = utils.article2ids(article_words, vocab)
+            self.enc_inp_extend_vocab, self.article_oovs = utils.article2ids(articles_words, vocab)
 
             # Get a verison of the reference summary where in-article OOVs are represented by their temporary article OOV id
             abs_ids_extend_vocab = utils.abstract2ids(abstract_words, vocab, self.article_oovs)
@@ -149,11 +150,11 @@ class Example(object):
         # while len(self.enc_inp) < max_len:
         #     self.enc_inp.append(pad_id)
             if config.pointer_gen:
-                while len(self.enc_inp_extend_vocab[i]) < max_len:
-                    try:
+                try: 
+                    while len(self.enc_inp_extend_vocab[i]) < max_len:
                         self.enc_inp_extend_vocab[i].append(pad_id)
-                    except IndexError:
-                        print(i)
+                except IndexError:
+                    print(len(self.enc_inp_extend_vocab[i]), i , max_len)
 
     def pad_dec_seq(self, max_len, pad_id):
         while len(self.dec_inp) < max_len:
@@ -333,7 +334,7 @@ class Batcher(object):
                  abstract) = input_gen.__next__()  # read the next example from file. article and abstract are both strings.
 
                 # print("canot enter stop")
-            except StopIteration:  # if there are no more examples:
+            except RuntimeError:  # if there are no more examples:
                 tf.logging.info("The example generator for this example queue filling thread has exhausted data.")
                 if self.single_pass:
                     tf.logging.info(
