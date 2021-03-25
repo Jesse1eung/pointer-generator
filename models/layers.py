@@ -163,12 +163,12 @@ class Decoder(BasicModule):
     def merge_final_dist(self, c_t, s_t_hat, x, attn_dist, encs_att, extra_zeros, enc_batch_extend_vocab,
                          lstm_out, p_gen=None):
         final_dists = []
-        if config.pointer_gen:
-            p_gen_inp = torch.cat((c_t, s_t_hat, x), 1)  # B x (2*2*hidden_dim + emb_dim)
-            p_gen = self.p_gen_fc(p_gen_inp)
-            p_gen = torch.sigmoid(p_gen)
-        for i in range(config.num_encoders):
 
+        for i in range(config.num_encoders):
+            if config.pointer_gen:
+                p_gen_inp = torch.cat((c_t[i], s_t_hat, x), 1)  # B x (2*2*hidden_dim + emb_dim)
+                p_gen = self.p_gen_fc(p_gen_inp)
+                p_gen = torch.sigmoid(p_gen)
             output = torch.cat((lstm_out.view(-1, config.hidden_dim), c_t[i]), 1)  # B x hidden_dim * 3
             output = self.fc1[i](output)  # B x hidden_dim
 
