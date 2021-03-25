@@ -146,13 +146,13 @@ class Decoder(BasicModule):
         dec_h, dec_c = s_t
         s_t_hat = torch.cat((dec_h.view(-1, config.hidden_dim),
                              dec_c.view(-1, config.hidden_dim)), 1)  # B x 2*hidden_dim
-
-        c_t, attn_dist, coverage_next = self.multiattention(s_t_hat, enc_out, enc_fea,
+        encs_att = self.encoders_att(enc_h, y_t_embd)
+        c_t, attn_dist, coverage_next = self.multiattention(s_t_hat, enc_out, enc_fea, encs_att,
                                                             enc_padding_mask, coverage)
 
         if self.training or step > 0:
             coverage = coverage_next
-        encs_att = self.encoders_att(enc_h, y_t_embd)
+
         p_gen = None
         if config.pointer_gen:
             p_gen_inp = torch.cat((c_t, s_t_hat, x), 1)  # B x (2*2*hidden_dim + emb_dim)

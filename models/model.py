@@ -34,8 +34,8 @@ class Model(object):
 
         # shared the embedding between encoders and decoder
         for i in range(1, config.num_encoders):
-            encoders[i].src_word_emb.weight = encoders[0].src_word_emb.weight
-        decoder.tgt_word_emb.weight = encoders[0].src_word_emb.weight
+            encoders.encoders[i].src_word_emb.weight = encoders.encoders[0].src_word_emb.weight
+        decoder.tgt_word_emb.weight = encoders.encoders[0].src_word_emb.weight
 
         if is_eval:
             encoders = encoders.eval()

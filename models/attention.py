@@ -59,12 +59,13 @@ class MultiAttention(BasicModule):
 
         self.m_att = nn.ModuleList([Attention() for _ in range(config.num_encoders)])
 
-    def forward(self, s_t, enc_out, enc_fea, enc_padding_mask, coverage):
+    def forward(self, s_t, enc_out, enc_fea, encs_att, enc_padding_mask, coverage):
         c_ts = []
         attn_dists = []
         for i in range(config.num_encoders):
             c_t, attn_dist, coverage = self.m_att[i](s_t, enc_out[i], enc_fea[i], enc_padding_mask[i], coverage)
             c_ts.append(c_t)
             attn_dists.append(attn_dist)
-
-        return c_ts, attn_dists, coverage
+        c_t = torch.stack(c_ts, 1)
+        c_t = torch.bmm(encs_att,c_t).squeeze()
+        return c_t, attn_dists, coverage
