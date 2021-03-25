@@ -19,7 +19,7 @@ beam_size=4
 emb_dim= 128
 batch_size= 16
 hidden_dim= 256
-max_enc_steps=400
+max_enc_steps=200
 max_dec_steps=100
 max_tes_steps=100
 min_dec_steps=35
@@ -52,11 +52,11 @@ d_model = 128
 d_inner = 512
 n_warmup_steps = 4000
 
-root_dir = os.path.expanduser("./")
-log_root = os.path.join(root_dir, "dataset/log/")
+root_dir = os.path.expanduser("~/data")
+log_root = os.path.join(root_dir, "log/gitptr_log")
 
 #train_data_path = os.path.join(root_dir, "pointer_generator/dataset/finished_files/train.bin")
-train_data_path = os.path.join(root_dir, "dataset/finished_files/chunked/train_*")
-eval_data_path = os.path.join(root_dir, "dataset/finished_files/val.bin")
-decode_data_path = os.path.join(root_dir, "dataset/finished_files/test.bin")
-vocab_path = os.path.join(root_dir, "dataset/finished_files/vocab")
+train_data_path = os.path.join(root_dir, "ptr_data/phrases_finished_files/chunked/train_*")
+eval_data_path = os.path.join(root_dir, "ptr_data/phrases_finished_files/val.bin")
+decode_data_path = os.path.join(root_dir, "ptr_data/phrases_finished_files/test.bin")
+vocab_path = os.path.join(root_dir, "ptr_data/phrases_finished_files/vocab")

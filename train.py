@@ -93,7 +93,7 @@ class Train(object):
         # else:
         #     enc_out, enc_fea, enc_h = self.model.encoder(enc_batch, enc_pos)
 
-        s_t = self.model.reduce_state(enc_out_tuple[2])
+        s_t = self.model.reduce_state(enc_out_tuple[2][0])
 
         step_losses, cove_losses = [], []
         for di in range(min(max_dec_len, config.max_dec_steps)):
