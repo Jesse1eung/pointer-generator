@@ -53,3 +53,18 @@ class Attention(BasicModule):
 
         return c_t, attn_dist, coverage
 
+class MultiAttention(BasicModule):
+    def __init__(self):
+        super(MultiAttention, self).__init__()
+
+        self.m_att = nn.ModuleList([Attention() for _ in range(config.num_encoders)])
+
+    def forward(self, s_t, enc_out, enc_fea, enc_padding_mask, coverage):
+        c_ts = []
+        attn_dists = []
+        for i in range(config.num_encoders):
+            c_t, attn_dist, coverage = self.m_att[i](s_t, enc_out[i], enc_fea[i], enc_padding_mask[i], coverage)
+            c_ts.append(c_t)
+            attn_dists.append(attn_dist)
+
+        return c_ts, attn_dists, coverage

@@ -5,6 +5,8 @@ import torch.nn as nn
 from utils import config
 from numpy import random
 from models.layers import Encoder
+from models.layers import Encoders
+
 from models.layers import Encoders_Attention
 from models.layers import Decoder
 from models.layers import ReduceState
@@ -20,15 +22,15 @@ if torch.cuda.is_available():
 
 
 class Model(object):
-    def __init__(self, model_path=None, is_eval=False, is_tran = False):
-        # encoder = Encoder()
-        encoders = nn.ModuleList([Encoder() for _ in range(config.num_encoders)])
+    def __init__(self, model_path=None, is_eval=False, is_tran=False):
+        encoders = Encoders()
         encoders_att = Encoders_Attention()
         decoder = Decoder()
         reduce_state = ReduceState()
         if is_tran:
             encoder = TranEncoder(config.vocab_size, config.max_enc_steps, config.emb_dim,
-                 config.n_layers, config.n_head, config.d_k, config.d_v, config.d_model, config.d_inner)
+                                  config.n_layers, config.n_head, config.d_k, config.d_v, config.d_model,
+                                  config.d_inner)
 
         # shared the embedding between encoders and decoder
         for i in range(1, config.num_encoders):
@@ -38,10 +40,12 @@ class Model(object):
         if is_eval:
             encoders = encoders.eval()
             decoder = decoder.eval()
+            encoders_att = encoders_att.eval()
             reduce_state = reduce_state.eval()
 
         if use_cuda:
             encoders = encoders.cuda()
+            encoders_att = encoders_att.cuda()
             decoder = decoder.cuda()
             reduce_state = reduce_state.cuda()
 

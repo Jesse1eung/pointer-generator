@@ -17,7 +17,6 @@ from utils import utils, config
 
 random.seed(1234)
 
-
 # <s> and </s> are used in the data files to segment the abstracts into sentences. They don't receive vocab ids.
 SENTENCE_STA = '<s>'
 SENTENCE_END = '</s>'
@@ -26,6 +25,8 @@ PAD_TOKEN = '[PAD]'  # This has a vocab id, which is used to pad the encoder inp
 UNK_TOKEN = '[UNK]'  # This has a vocab id, which is used to represent out-of-vocabulary words
 BOS_TOKEN = '[BOS]'  # This has a vocab id, which is used at the start of every decoder input sequence
 EOS_TOKEN = '[EOS]'  # This has a vocab id, which is used at the end of untruncated target sequences
+
+
 # Note: none of <s>, </s>, [PAD], [UNK], [START], [STOP] should appear in the vocab file.
 
 
@@ -34,7 +35,7 @@ class Vocab(object):
     def __init__(self, file, max_size):
         self.word2idx = {}
         self.idx2word = {}
-        self.count = 0     # keeps track of total number of words in the Vocab
+        self.count = 0  # keeps track of total number of words in the Vocab
 
         # [UNK], [PAD], [BOS] and [EOS] get the ids 0,1,2,3.
         for w in [UNK_TOKEN, PAD_TOKEN, BOS_TOKEN, EOS_TOKEN]:
@@ -61,7 +62,7 @@ class Vocab(object):
                 if max_size != 0 and self.count >= max_size:
                     break
         print("Finished constructing vocabulary of %i total words. Last word added: %s" % (
-          self.count, self.idx2word[self.count - 1]))
+            self.count, self.idx2word[self.count - 1]))
 
     def word2id(self, word):
         if word not in self.word2idx:
@@ -77,12 +78,13 @@ class Vocab(object):
         return self.count
 
     def write_metadata(self, path):
-        print( "Writing word embedding metadata file to %s..." % (path))
+        print("Writing word embedding metadata file to %s..." % path)
         with open(path, "w") as f:
             fieldnames = ['word']
             writer = csv.DictWriter(f, delimiter="\t", fieldnames=fieldnames)
             for i in range(self.size()):
                 writer.writerow({"word": self.idx2word[i]})
+
 
 class Example(object):
 
@@ -95,7 +97,7 @@ class Example(object):
         abstract = ' '.encode().join(abstract_sentences).decode()
         abstract_words = abstract.split()  # list of strings
         abs_ids = [vocab.word2id(w) for w in
-                   abstract_words]         # list of word ids; OOVs are represented by the id for UNK token
+                   abstract_words]  # list of word ids; OOVs are represented by the id for UNK token
 
         # Get the decoder input sequence and target sequence
         self.dec_inp, self.tgt = self.get_dec_seq(abs_ids, config.max_dec_steps, bos_decoding, eos_decoding)
@@ -111,7 +113,7 @@ class Example(object):
                 article_words = article_words[:config.max_enc_steps]
             self.enc_len.append(len(article_words))  # store the length after truncation but before padding
             self.enc_inp.append([vocab.word2id(w) for w in
-                              article_words])   # list of word ids; OOVs are represented by the id for UNK token
+                                 article_words])  # list of word ids; OOVs are represented by the id for UNK token
             articles_words.append(article_words)
         # If using pointer-generator mode, we need to store some extra info
 
@@ -120,7 +122,8 @@ class Example(object):
             # also store the in-article OOVs words themselves
             self.enc_inp_extend_vocab, self.article_oovs = utils.article2ids(articles_words, vocab)
 
-            # Get a verison of the reference summary where in-article OOVs are represented by their temporary article OOV id
+            # Get a verison of the reference summary where in-article OOVs are represented by their temporary article
+            # OOV id
             abs_ids_extend_vocab = utils.abstract2ids(abstract_words, vocab, self.article_oovs)
 
             # Overwrite decoder target sequence so it uses the temp article OOV ids
@@ -131,10 +134,11 @@ class Example(object):
         self.original_abstract = abstract
         self.original_abstract_sents = abstract_sentences
 
-    def get_dec_seq(self, sequence, max_len, start_id, stop_id):
+    @staticmethod
+    def get_dec_seq(sequence, max_len, start_id, stop_id):
         src = [start_id] + sequence[:]
         tgt = sequence[:]
-        if len(src) > max_len:   # truncate
+        if len(src) > max_len:  # truncate
             src = src[:max_len]
             tgt = tgt[:max_len]  # no end_token
         else:  # no truncation
@@ -146,8 +150,8 @@ class Example(object):
         for i in range(config.num_encoders):
             while len(self.enc_inp[i]) < max_len:
                 self.enc_inp[i].append(pad_id)
-        # while len(self.enc_inp) < max_len:
-        #     self.enc_inp.append(pad_id)
+            # while len(self.enc_inp) < max_len:
+            #     self.enc_inp.append(pad_id)
             if config.pointer_gen:
                 while len(self.enc_inp_extend_vocab[i]) < max_len:
                     try:
@@ -167,12 +171,11 @@ class Batch(object):
         self.batch_size = batch_size
         self.pad_id = vocab.word2id(PAD_TOKEN)  # id of the PAD token used to pad sequences
         # self.init_encoder_seq(example_list)  # initialize the input to the encoder
-        self.init_encoder_seq(example_list, num_encoders=config.num_encoders)  # initialize the input to the encoder
+        self.init_encoder_seq(example_list)  # initialize the input to the encoder
         self.init_decoder_seq(example_list)  # initialize the input and targets for the decoder
         self.store_orig_strings(example_list)  # store the original strings
 
-
-    def init_encoder_seq(self, example_list, num_encoders):
+    def init_encoder_seq(self, example_list):
         # Determine the maximum length of the encoder input sequence in this batch
         max_enc_seq_len = max([max(ex.enc_len) for ex in example_list])
 
@@ -204,10 +207,12 @@ class Batch(object):
             # Store the in-article OOVs themselves
             self.art_oovs = [ex.article_oovs for ex in example_list]
             # Store the version of the enc_batch that uses the article OOV ids
-            self.enc_batch_extend_vocab = np.zeros((config.num_encoders, self.batch_size, max_enc_seq_len), dtype=np.int32)
+            self.enc_batch_extend_vocab = np.zeros((config.num_encoders, self.batch_size, max_enc_seq_len),
+                                                   dtype=np.int32)
             for i, ex in enumerate(example_list):
                 for k in range(config.num_encoders):
                     self.enc_batch_extend_vocab[k, i, :] = ex.enc_inp_extend_vocab[k][:]
+
     # def init_encoder_seq(self, example_list):
     #     # Determine the maximum length of the encoder input sequence in this batch
     #     max_enc_seq_len = max([ex.enc_len for ex in example_list])
@@ -283,13 +288,13 @@ class Batcher(object):
         # Different settings depending on whether we're in single_pass mode or not
         if single_pass:
             self._num_example_q_threads = 1  # just one thread, so we read through the dataset just once
-            self._num_batch_q_threads = 1    # just one thread to batch examples
-            self._bucketing_cache_size = 1   # only load one batch's worth of examples before bucketing
-            self._finished_reading = False   # this will tell us when we're finished reading the dataset
+            self._num_batch_q_threads = 1  # just one thread to batch examples
+            self._bucketing_cache_size = 1  # only load one batch's worth of examples before bucketing
+            self._finished_reading = False  # this will tell us when we're finished reading the dataset
         else:
             self._num_example_q_threads = 1  # num threads to fill example queue
-            self._num_batch_q_threads = 1    # num threads to fill batch queue
-            self._bucketing_cache_size = 1   # how many batches-worth of examples to load into cache before bucketing
+            self._num_batch_q_threads = 1  # num threads to fill batch queue
+            self._bucketing_cache_size = 1  # how many batches-worth of examples to load into cache before bucketing
 
         # Start the threads that load the queues
         self._example_q_threads = []
@@ -304,7 +309,7 @@ class Batcher(object):
             self._batch_q_threads[-1].start()
 
         # Start a thread that watches the other threads and restarts them if they're dead
-        if not single_pass:                   # We don't want a watcher in single_pass mode because the threads shouldn't run forever
+        if not single_pass:  # We don't want a watcher in single_pass mode because the threads shouldn't run forever
             self._watch_thread = Thread(target=self.watch_threads)
             self._watch_thread.daemon = True
             self._watch_thread.start()
@@ -406,7 +411,8 @@ class Batcher(object):
             except ValueError:
                 tf.logging.error('Failed to get article or abstract from example')
                 continue
-            if len(article_text1) == 0 or len(article_text2) == 0:  # See https://github.com/abisee/pointer-generator/issues/1
+            if len(article_text1) == 0 or len(
+                    article_text2) == 0:  # See https://github.com/abisee/pointer-generator/issues/1
                 # tf.logging.warning('Found an example with empty article text. Skipping it.')
                 continue
             else:
