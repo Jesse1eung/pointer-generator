@@ -53,7 +53,7 @@ class Train(object):
         torch.save(state, model_save_path)
 
     def setup_train(self, model_path=None):
-        self.model = Model(model_path, is_tran= config.tran)
+        self.model = Model(model_path, is_tran=config.tran)
         initial_lr = config.lr_coverage if config.is_coverage else config.lr
 
         params = list(self.model.encoders.parameters()) + list(self.model.decoder.parameters()) + \
@@ -86,45 +86,22 @@ class Train(object):
             get_output_from_batch(batch, use_cuda)
 
         self.optimizer.zero_grad()
-        enc_outs = []
-        enc_feas = []
-        enc_hs = []
-        if not config.tran:
-            for i, encoder in enumerate(self.model.encoders):
-                enc_out, enc_fea, enc_h = encoder(enc_batch[i], enc_lens[i])
-                enc_outs.append(enc_out)
-                enc_feas.append(enc_fea)
-                enc_hs.append(enc_h)
 
+        #
+        # if not config.tran:
+        enc_out_tuple = self.model.encoders(enc_batch, enc_lens)
         # else:
         #     enc_out, enc_fea, enc_h = self.model.encoder(enc_batch, enc_pos)
 
-
-
-        s_t = self.model.reduce_state(enc_h)
+        s_t = self.model.reduce_state(enc_out_tuple[2])
 
         step_losses, cove_losses = [], []
         for di in range(min(max_dec_len, config.max_dec_steps)):
             y_t = dec_batch[:, di]  # Teacher forcing
 
-            # modify the original frame for two encoders.
-            final_dist_0, s_t_0, c_t_0, attn_dist_0, p_gen, next_coverage = \
-                self.model.decoder(y_t, s_t, enc_outs[0], enc_feas[0], enc_padding_mask[0], c_t,
-                                   extra_zeros, enc_batch_extend_vocab[0], coverage, di)
-
-            final_dist_1, s_t_1, c_t_1, attn_dist, p_gen, next_coverage = \
-                self.model.decoder(y_t, s_t, enc_outs[1], enc_feas[1], enc_padding_mask[1], c_t,
-                                   extra_zeros, enc_batch_extend_vocab[1], coverage, di)
-
-            y_t_emb = self.model.decoder.tgt_word_emb(y_t)
-            encoders_att = self.model.encoders_att(enc_hs, y_t_emb)
-            final_dist = torch.stack((final_dist_0, final_dist_1), dim=1)
-            final_dist = torch.bmm(encoders_att, final_dist).squeeze()
-
-            encoders_att_ = encoders_att.transpose(0, 1).contiguous() # 1 x b x 2
-            h = s_t_0[0] * encoders_att_[:, :, :1] + s_t_1[0] * encoders_att_[:, :, 1:]
-            c = s_t_0[1] * encoders_att_[:, :, :1] + s_t_1[1] * encoders_att_[:, :, 1:]
-            s_t = (h, c)
+            final_dist, s_t, c_t, attn_dist, p_gen, next_coverage = \
+                self.model.decoder(y_t, s_t, enc_out_tuple, enc_padding_mask, c_t,
+                                   extra_zeros, enc_batch_extend_vocab, coverage, di)
 
             tgt = tgt_batch[:, di]
             step_mask = dec_padding_mask[:, di]

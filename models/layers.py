@@ -36,6 +36,25 @@ class Encoder(BasicModule):
         return encoder_outputs, encoder_feature, hidden
 
 
+class Encoders(BasicModule):
+    def __init__(self):
+        super(Encoders, self).__init__()
+
+        self.encoders = nn.ModuleList([Encoder() for _ in range(config.num_encoders)])
+
+    def forward(self, batch, seq_lens):
+        enc_outs = []
+        enc_feas = []
+        enc_hs = []
+        for i, encoder in enumerate(self.encoders):
+            enc_out, enc_fea, enc_h = encoder(batch[i], seq_lens[i])
+            enc_outs.append(enc_out)
+            enc_feas.append(enc_fea)
+            enc_hs.append(enc_h)
+
+        return enc_outs, enc_feas, enc_hs
+
+
 class Encoders_Attention(BasicModule):
     def __init__(self):
         super(Encoders_Attention, self).__init__()
@@ -66,25 +85,6 @@ class Encoders_Attention(BasicModule):
         att_dist = F.softmax(scores, dim=-1)
 
         return att_dist
-
-
-class Encoders(BasicModule):
-    def __init__(self):
-        super(Encoders, self).__init__()
-
-        self.encoders = nn.ModuleList([Encoder() for _ in range(config.num_encoders)])
-
-    def forward(self, batch, seq_lens):
-        enc_outs = []
-        enc_feas = []
-        enc_hs = []
-        for i, encoder in enumerate(self.encoders):
-            enc_out, enc_fea, enc_h = encoder(batch[i], seq_lens[i])
-            enc_outs.append(enc_out)
-            enc_feas.append(enc_fea)
-            enc_hs.append(enc_h)
-
-        return enc_outs, enc_feas, enc_hs
 
 
 class ReduceState(BasicModule):
