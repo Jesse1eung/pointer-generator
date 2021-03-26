@@ -135,7 +135,7 @@ class Decoder(BasicModule):
                                  dec_c.view(-1, config.hidden_dim)), 1)  # B x 2*hidden_dim
             # c_t, _, coverage_next = self.attention_network(s_t_hat, enc_out, enc_fea,
             #                                                enc_padding_mask, coverage)
-            print("step 0")
+            # print("step 0")
             # coverage = coverage_next
 
         y_t_embd = self.tgt_word_emb(y_t)
@@ -184,10 +184,6 @@ class Decoder(BasicModule):
                     vocab_dist_ = torch.cat([vocab_dist_, extra_zeros], 1)
                 enc_batch_extend_vocab_i = enc_batch_extend_vocab[i][:,:l]
                 final_dist = vocab_dist_.scatter_add(1, enc_batch_extend_vocab_i, attn_dist_)
-                # try:
-                #     final_dist = vocab_dist_.scatter_add(1, enc_batch_extend_vocab_i, attn_dist_)
-                # except RuntimeError:
-                #     print(enc_batch_extend_vocab_i.shape, attn_dist_.shape, l)
             else:
                 final_dist = vocab_dist
             final_dists.append(final_dist)
