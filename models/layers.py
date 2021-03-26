@@ -183,10 +183,11 @@ class Decoder(BasicModule):
                 if extra_zeros is not None:
                     vocab_dist_ = torch.cat([vocab_dist_, extra_zeros], 1)
                 enc_batch_extend_vocab_i = enc_batch_extend_vocab[i][:,:l]
-                try:
-                    final_dist = vocab_dist_.scatter_add(1, enc_batch_extend_vocab_i, attn_dist_)
-                except RuntimeError:
-                    print(enc_batch_extend_vocab_i.shape, attn_dist_.shape, l)
+                final_dist = vocab_dist_.scatter_add(1, enc_batch_extend_vocab_i, attn_dist_)
+                # try:
+                #     final_dist = vocab_dist_.scatter_add(1, enc_batch_extend_vocab_i, attn_dist_)
+                # except RuntimeError:
+                #     print(enc_batch_extend_vocab_i.shape, attn_dist_.shape, l)
             else:
                 final_dist = vocab_dist
             final_dists.append(final_dist)
