@@ -45,9 +45,9 @@ class Beam(object):
 
 class BeamSearch(object):
     def __init__(self, model_file_path):
-        
+
         model_name = os.path.basename(model_file_path)
-        self._test_dir = os.path.join(config.log_root, 'decode_%s' % (model_name))
+        self._test_dir = os.path.join(config.log_root, 'decode_%s' % model_name)
         self._rouge_ref_dir = os.path.join(self._test_dir, 'rouge_ref')
         self._rouge_dec_dir = os.path.join(self._test_dir, 'rouge_dec')
         for p in [self._test_dir, self._rouge_ref_dir, self._rouge_dec_dir]:
@@ -61,19 +61,19 @@ class BeamSearch(object):
 
         self.model = Model(model_file_path, is_eval=True)
 
-    def sort_beams(self, beams):
+    @staticmethod
+    def sort_beams(beams):
         return sorted(beams, key=lambda h: h.avg_log_prob, reverse=True)
-    
 
     def beam_search(self, batch):
         # single example repeated across the batch
         enc_batch, enc_lens, enc_pos, enc_padding_mask, enc_batch_extend_vocab, extra_zeros, c_t, coverage = \
             get_input_from_batch(batch, use_cuda)
 
-        enc_out, enc_fea, enc_h = self.model.encoder(enc_batch, enc_lens)
-        s_t = self.model.reduce_state(enc_h)
+        enc_out_tuple = self.model.encoders(enc_batch, enc_lens)
+        s_t = self.model.reduce_state(enc_out_tuple[2][0])
 
-        dec_h, dec_c = s_t     # b x hidden_dim
+        dec_h, dec_c = s_t  # b x hidden_dim
         dec_h = dec_h.squeeze()
         dec_c = dec_c.squeeze()
 
@@ -96,7 +96,7 @@ class BeamSearch(object):
                 y_t = y_t.cuda()
             all_state_h = [h.state[0] for h in beams]
             all_state_c = [h.state[1] for h in beams]
-            all_context = [h.context  for h in beams]
+            all_context = [h.context for h in beams]
 
             s_t = (torch.stack(all_state_h, 0).unsqueeze(0), torch.stack(all_state_c, 0).unsqueeze(0))
             c_t = torch.stack(all_context, 0)
@@ -106,11 +106,10 @@ class BeamSearch(object):
                 all_coverage = [h.coverage for h in beams]
                 coverage_t = torch.stack(all_coverage, 0)
 
-            final_dist, s_t, c_t, attn_dist, p_gen, coverage_t = self.model.decoder(y_t, s_t,
-                                                                                    enc_out, enc_fea,
-                                                                                    enc_padding_mask, c_t,
-                                                                                    extra_zeros, enc_batch_extend_vocab,
-                                                                                    coverage_t, steps)
+            final_dist, s_t, c_t, attn_dist, p_gen, next_coverage = \
+                self.model.decoder(y_t, s_t, enc_out_tuple, enc_padding_mask, c_t,
+                                   extra_zeros, enc_batch_extend_vocab, coverage, steps)
+
             log_probs = torch.log(final_dist)
             topk_log_probs, topk_ids = torch.topk(log_probs, config.beam_size * 2)
 
@@ -119,7 +118,8 @@ class BeamSearch(object):
             dec_c = dec_c.squeeze()
 
             all_beams = []
-            # On the first step, we only had one original hypothesis (the initial hypothesis). On subsequent steps, all original hypotheses are distinct.
+            # On the first step, we only had one original hypothesis (the initial hypothesis). On subsequent steps,
+            # all original hypotheses are distinct.
             num_orig_beams = 1 if steps == 0 else len(beams)
             for i in range(num_orig_beams):
                 h = beams[i]
@@ -153,9 +153,9 @@ class BeamSearch(object):
         beams_sorted = self.sort_beams(results)
 
         return beams_sorted[0]
-    
+
     def run(self):
-        
+
         counter = 0
         start = time.time()
         batch = self.batcher.next_batch()
@@ -166,7 +166,7 @@ class BeamSearch(object):
             # Extract the output ids from the hypothesis and convert back to words
             output_ids = [int(t) for t in best_summary.tokens[1:]]
             decoded_words = utils.outputids2words(output_ids, self.vocab,
-                                                    (batch.art_oovs[0] if config.pointer_gen else None))
+                                                  (batch.art_oovs[0] if config.pointer_gen else None))
 
             # Remove the [STOP] token from decoded_words, if necessary
             try:

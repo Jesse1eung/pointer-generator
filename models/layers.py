@@ -155,7 +155,7 @@ class Decoder(BasicModule):
 
         p_gen = None
 
-        final_dist = self.merge_final_dist(c_t_list, s_t_hat, x, attn_dist, encs_att, extra_zeros,
+        p_gen, final_dist = self.merge_final_dist(c_t_list, s_t_hat, x, attn_dist, encs_att, extra_zeros,
                                            enc_batch_extend_vocab, lstm_out, p_gen)
 
         return final_dist, s_t, c_t, attn_dist, p_gen, coverage
