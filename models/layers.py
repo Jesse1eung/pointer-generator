@@ -165,7 +165,7 @@ class Decoder(BasicModule):
         final_dists = []
 
         for i in range(config.num_encoders):
-            b, l, n = list(enc_out[i].size)
+            b, l, n = list(enc_out[i].size())
             if config.pointer_gen:
                 p_gen_inp = torch.cat((c_t[i], s_t_hat, x), 1)  # B x (2*2*hidden_dim + emb_dim)
                 p_gen = self.p_gen_fc(p_gen_inp)
