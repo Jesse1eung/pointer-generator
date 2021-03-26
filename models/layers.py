@@ -133,10 +133,10 @@ class Decoder(BasicModule):
             dec_h, dec_c = s_t
             s_t_hat = torch.cat((dec_h.view(-1, config.hidden_dim),
                                  dec_c.view(-1, config.hidden_dim)), 1)  # B x 2*hidden_dim
-            c_t, _, coverage_next = self.attention_network(s_t_hat, enc_out, enc_fea,
-                                                           enc_padding_mask, coverage)
+            # c_t, _, coverage_next = self.attention_network(s_t_hat, enc_out, enc_fea,
+            #                                                enc_padding_mask, coverage)
             print("step 0")
-            coverage = coverage_next
+            # coverage = coverage_next
 
         y_t_embd = self.tgt_word_emb(y_t)
 
