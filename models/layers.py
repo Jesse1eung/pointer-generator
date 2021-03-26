@@ -155,16 +155,17 @@ class Decoder(BasicModule):
 
         p_gen = None
 
-        p_gen, final_dist = self.merge_final_dist(c_t_list, s_t_hat, x, attn_dist, encs_att, extra_zeros,
+        p_gen, final_dist = self.merge_final_dist(c_t_list, s_t_hat, x, enc_out, attn_dist, encs_att, extra_zeros,
                                            enc_batch_extend_vocab, lstm_out, p_gen)
 
         return final_dist, s_t, c_t, attn_dist, p_gen, coverage
 
-    def merge_final_dist(self, c_t, s_t_hat, x, attn_dist, encs_att, extra_zeros, enc_batch_extend_vocab,
+    def merge_final_dist(self, c_t, s_t_hat, x, enc_out, attn_dist, encs_att, extra_zeros, enc_batch_extend_vocab,
                          lstm_out, p_gen=None):
         final_dists = []
 
         for i in range(config.num_encoders):
+            b, l, n = list(enc_out[i].size)
             if config.pointer_gen:
                 p_gen_inp = torch.cat((c_t[i], s_t_hat, x), 1)  # B x (2*2*hidden_dim + emb_dim)
                 p_gen = self.p_gen_fc(p_gen_inp)
@@ -181,7 +182,7 @@ class Decoder(BasicModule):
 
                 if extra_zeros is not None:
                     vocab_dist_ = torch.cat([vocab_dist_, extra_zeros], 1)
-
+                enc_batch_extend_vocab = enc_batch_extend_vocab[i][:,:l]
                 final_dist = vocab_dist_.scatter_add(1, enc_batch_extend_vocab[i], attn_dist_)
             else:
                 final_dist = vocab_dist
